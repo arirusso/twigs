@@ -12,7 +12,7 @@ These functions can be assigned by the user to either or both channels on the mo
 ## Usage
 #### Shared Input/Reset
 
-![diagram of inputs](http://i.imgur.com/G5WXcwb.png)
+![twigs alt firmware, diagram of inputs](http://i.imgur.com/G5WXcwb.png)
 
 There is one major difference between the layout of Twigs and stock Branches: the channels don't have individual inputs.  As pictured, top input (**1**) is for reset and the bottom input (**2**) is for trig/clock.
 
@@ -26,7 +26,7 @@ VC Factor is a combination clock/trigger divider and multiplier
 
 ###### Factor Control
 
-![diagram of factor control](http://i.imgur.com/wFBZeqx.png)
+![twigs alt firmware, diagram of factor control](http://i.imgur.com/wFBZeqx.png)
 
 The channel's knob controls the *factor*, which determines whether the input is divided or multiplied and by how much
 
@@ -36,7 +36,7 @@ When the knob is at the zero position, the effect is bypassed and will pass inpu
 
 ###### Other Controls
 
-![diagram of factor channel](http://i.imgur.com/tCcVnm3.png)
+![twigs alt firmware, diagram of factor channel](http://i.imgur.com/tCcVnm3.png)
 
 The VC input (**2**) controls the factor in the same manner as the knob
 
@@ -48,7 +48,7 @@ VC Swing modifies incoming triggers/clock to have musical swing
 
 ###### Controls
 
-![diagram of swing channel](http://i.imgur.com/tCcVnm3.png)
+![twigs alt firmware, diagram of swing channel](http://i.imgur.com/tCcVnm3.png)
 
 The knob (**A**) controls the swing amount with a range of 50% - 70%.
 
