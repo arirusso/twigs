@@ -66,6 +66,8 @@ Holding the channel's button for a couple of seconds will toggle the function of
 
 ## Installation
 
+Download the latest stable source & dependencies package [here](https://github.com/arirusso/twigs/blob/master/releases/twigs-1.0.0.tar.gz?raw=true)
+
 Mutable Instruments' guide to installing open source firmware on Branches can be found [here](http://mutable-instruments.net/modules/branches/open) under "Sending the firmware to the module"
 
 My notes for uploading Twigs using OSX and an interface I purchased on Amazon are [here](https://gist.github.com/arirusso/9d55c77618bd1195a9fc238ffac47f18)
