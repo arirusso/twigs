@@ -14,9 +14,9 @@ These functions can be assigned by the user to either or both channels on the mo
 
 ![twigs alt firmware, diagram of inputs](http://i.imgur.com/honssyb.png)
 
-There is one major difference between the layout of Twigs and stock Branches: the channels don't have individual inputs.  As pictured, top input (**1**) is for reset and the bottom input (**2**) is for trig/clock.
+There is one major difference between the layout of Twigs and stock Branches: the channels don't have individual inputs.  
 
-These inputs are routed to both channels
+As pictured, top input (**1**) is for reset and the bottom input (**2**) is for trig/clock. *These inputs are shared by both channels*
 
 ### Functions
 
