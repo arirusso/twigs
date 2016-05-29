@@ -42,6 +42,8 @@ The VC input (**2**) controls the factor in the same manner as the knob
 
 While dividing, tapping the button (**B**) performs a manual reset.  This results in the next input trig being a strike and the counter starting over. This is the same behavior as sending a pulse to the reset input
 
+Both outputs (**1**) produce the same result
+
 #### VC Swing
 
 VC Swing modifies incoming triggers/clock to have musical swing
@@ -57,6 +59,8 @@ At 50%, the swing effect is essentially bypassed. However, as the knob turns clo
 The VC input (**2**) controls the swing amount in the same manner as the knob
 
 Tapping the button (**B**) performs a manual reset. For the swing function, this means that the next input trig will be the non-swing one.  This is the same behavior as sending a pulse to the reset input
+
+Both outputs (**1**) produce the same result
 
 ### Select a Function
 
