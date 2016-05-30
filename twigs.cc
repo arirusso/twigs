@@ -478,6 +478,13 @@ inline void MultiplyExec(uint8_t channel) {
   }
 }
 
+// Update the given channel's state to reflect that the multiplier is executing
+// thru for this cycle
+inline void MultiplyExecThru(uint8_t channel) {
+  exec_state[channel] = 1;
+  channel_last_action_at[channel] = TCNT1;
+}
+
 // For the given channel, reset the divider function
 inline void DivideReset(uint8_t channel) {
   divide_counter[channel] = 0;
@@ -508,9 +515,7 @@ void FactorerHandleInputGateRisingEdge(uint8_t channel) {
       ++divide_counter[channel];
     }
   } else {
-    // all thru
-    exec_state[channel] = 1; // mult always acknowledges thru
-    channel_last_action_at[channel] = TCNT1;
+    MultiplyExecThru(channel); // multiply always acknowledges thru
   }
 }
 
