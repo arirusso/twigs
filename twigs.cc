@@ -494,6 +494,12 @@ inline void DivideExecStrike(uint8_t channel) {
   exec_state[channel] = 2; // divide converts thru to exec on every division
 }
 
+// Update the given channel's state to reflect a multiplier thru for this cycle
+inline void MultiplyExecThru(uint8_t channel) {
+  exec_state[channel] = 1;
+  channel_last_action_at[channel] = TCNT1;
+}
+
 // For the given channel, process a new pulse using the factorer function
 void FactorerHandleInputGateRisingEdge(uint8_t channel) {
   //
@@ -508,9 +514,7 @@ void FactorerHandleInputGateRisingEdge(uint8_t channel) {
       ++divide_counter[channel];
     }
   } else {
-    // all thru
-    exec_state[channel] = 1; // mult always acknowledges thru
-    channel_last_action_at[channel] = TCNT1;
+    MultiplyExecThru(channel); // mult always acknowledges thru
   }
 }
 
