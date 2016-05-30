@@ -45,7 +45,11 @@ Gpio<PortC, 3> button_1;
 // LEDs
 #define LED_THRU_GATE_DURATION 0x100
 #define LED_FACTORED_GATE_DURATION 0x080
+// Pulse Tracker
+#define PULSE_TRACKER_MAX_INSTANCES 2
 #define PULSE_TRACKER_BUFFER_SIZE 2
+#define PULSE_TRACKER_INPUT_INDEX 0
+#define PULSE_TRACKER_CHAIN_INDEX 1
 // ADC
 #define ADC_DELTA_THRESHOLD 4 // ignore ADC updates less than this absolute value
 #define ADC_MAX_VALUE 250
@@ -105,7 +109,7 @@ ChannelFunction channel_function_[SYSTEM_NUM_CHANNELS] = {
 };
 
 // Common function vars
-uint16_t pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE];
+uint16_t pulse_tracker_buffer[PULSE_TRACKER_MAX_INSTANCES][PULSE_TRACKER_BUFFER_SIZE];
 int16_t factor[SYSTEM_NUM_CHANNELS];
 
 // Multiply
@@ -241,26 +245,31 @@ inline void GateOutputOff(uint8_t channel) {
 }
 
 // Clear both of the values in the Pulse Tracker
-inline void PulseTrackerClear() {
-  pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE-2] = 0;
-  pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE-1] = 0;
+inline void PulseTrackerClear(uint8_t id) {
+  pulse_tracker_buffer[id][PULSE_TRACKER_BUFFER_SIZE-2] = 0;
+  pulse_tracker_buffer[id][PULSE_TRACKER_BUFFER_SIZE-1] = 0;
 }
 
 // The amount of time since the last tracked event
-inline uint16_t PulseTrackerGetElapsed() {
-  return TCNT1 - pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1];
+inline uint16_t PulseTrackerGetElapsed(uint8_t id) {
+  return TCNT1 - pulse_tracker_buffer[id][PULSE_TRACKER_BUFFER_SIZE - 1];
 }
 
 // The period of time between the last two recorded events
-inline uint16_t PulseTrackerGetPeriod() {
-  return pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] - pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2];
+inline uint16_t PulseTrackerGetPeriod(uint8_t id) {
+  return pulse_tracker_buffer[id][PULSE_TRACKER_BUFFER_SIZE - 1] - pulse_tracker_buffer[id][PULSE_TRACKER_BUFFER_SIZE - 2];
 }
 
 // Record the current time as the latest pulse tracker event and shift the last one back
-void PulseTrackerRecord() {
+void PulseTrackerRecord(uint8_t id) {
   // shift
-  pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2] = pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1];
-  pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] = TCNT1;
+  pulse_tracker_buffer[id][PULSE_TRACKER_BUFFER_SIZE - 2] = pulse_tracker_buffer[id][PULSE_TRACKER_BUFFER_SIZE - 1];
+  pulse_tracker_buffer[id][PULSE_TRACKER_BUFFER_SIZE - 1] = TCNT1;
+}
+
+bool PulseTrackerIsPopulated(uint8_t id) {
+  return pulse_tracker_buffer[id][PULSE_TRACKER_BUFFER_SIZE - 1] > 0 &&
+    pulse_tracker_buffer[id][PULSE_TRACKER_BUFFER_SIZE - 2] > 0;
 }
 
 // Is the factor control setting such that we're in multiplier mode?
@@ -270,15 +279,14 @@ inline bool MultiplyIsEnabled(uint8_t channel) {
 
 // Is the pulse tracker populated with enough events to perform multiply?
 inline bool MultiplyIsPossible(uint8_t channel) {
-  return pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] > 0 &&
-    pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2] > 0;
+  return PulseTrackerIsPopulated(PULSE_TRACKER_INPUT_INDEX);
 }
 
 // The time interval between multiplied events
 // eg if clock is comes in at 100 and 200, and the clock multiply factor is 2,
 // the result will be 50
 inline uint16_t MultiplyInterval(uint8_t channel) {
-  return PulseTrackerGetPeriod() / -factor[channel];
+  return PulseTrackerGetPeriod(PULSE_TRACKER_INPUT_INDEX) / -factor[channel];
 }
 
 // Should the multiplier function exec on this cycle?
@@ -404,7 +412,9 @@ inline bool ClockIsOverflow() {
 // Clear the pulse tracker and other time based variables.  Due to clock overflow
 // their meaning has been lost
 inline void ClockHandleOverflow() {
-  PulseTrackerClear();
+  for (uint8_t i = 0; i < PULSE_TRACKER_MAX_INSTANCES; ++i) {
+    PulseTrackerClear(i);
+  }
   for (uint8_t i = 0; i < SYSTEM_NUM_CHANNELS; ++i) {
     channel_last_action_at[i] = 0;
     button_last_press_at[i] = 0;
@@ -452,71 +462,9 @@ inline void LedUpdate(uint8_t channel) {
   }
 }
 
-// Is the gate input for the given channel seeing a new pulse?
-inline bool GateInputIsRisingEdge(uint8_t channel) {
-  bool last_state = gate_input_state[channel];
-  // store current input state
-  gate_input_state[channel] = GateInputRead(channel);
-  //
-  return gate_input_state[channel] && !last_state;
-}
-
-// For the given channel, update state for a multiply strike
-inline void MultiplyExecStrike(uint8_t channel) {
-  channel_last_action_at[channel] = TCNT1;
-  exec_state[channel] = 2;
-  multiply_is_debouncing[channel] = true;
-}
-
-// For the given channel and current system state, execute a single
-// cycle of the multiplier function
-inline void MultiplyExec(uint8_t channel) {
-  if (MultiplyIsEnabled(channel) &&
-        MultiplyIsPossible(channel) &&
-        MultiplyShouldStrike(channel, PulseTrackerGetElapsed())) {
-    MultiplyExecStrike(channel);
-  }
-}
-
-// Update the given channel's state to reflect that the multiplier is executing
-// thru for this cycle
-inline void MultiplyExecThru(uint8_t channel) {
-  exec_state[channel] = 1;
-  channel_last_action_at[channel] = TCNT1;
-}
-
-// For the given channel, reset the divider function
-inline void DivideReset(uint8_t channel) {
-  divide_counter[channel] = 0;
-}
-
-// For the given channel and current system state, should the divider function reset?
-inline bool DivideShouldReset(uint8_t channel) {
-  return divide_counter[channel] >= (factor[channel] - 1);
-}
-
-// For the given channel, update state for a divide strike
-inline void DivideExecStrike(uint8_t channel) {
-  channel_last_action_at[channel] = TCNT1;
-  exec_state[channel] = 2; // divide converts thru to exec on every division
-}
-
-// For the given channel, process a new pulse using the factorer function
-void FactorerHandleInputGateRisingEdge(uint8_t channel) {
-  //
-  if (DivideIsEnabled(channel)) {
-    if (DivideShouldStrike(channel)) {
-      DivideExecStrike(channel);
-    }
-    // deal with counter
-    if (DivideShouldReset(channel)) {
-      DivideReset(channel);
-    } else {
-      ++divide_counter[channel];
-    }
-  } else {
-    MultiplyExecThru(channel); // multiply always acknowledges thru
-  }
+inline bool FactorerHasChainedSwing(uint8_t channel) {
+  uint8_t other_channel = (channel == 0) ? 1 : 0;
+  return (channel_function_[other_channel] == CHANNEL_FUNCTION_SWING);
 }
 
 // For the given channel, pulses stored in the pulse tracker, and the factor setting
@@ -529,7 +477,7 @@ void FactorerHandleInputGateRisingEdge(uint8_t channel) {
 // [input pulse1/swing thru].......[input pulse2]....[swing strike]..........
 //
 inline uint16_t SwingInterval(uint8_t channel) {
-  uint16_t period = PulseTrackerGetPeriod();
+  uint16_t period = PulseTrackerGetPeriod(PULSE_TRACKER_INPUT_INDEX);
   return ((10 * (period * 2)) / (1000 / swing[channel])) - period;
 }
 
@@ -563,33 +511,118 @@ inline void SwingExecStrike(uint8_t channel) {
   channel_last_action_at[channel] = TCNT1;
 }
 
-// For the given channel, process a new pulse using the swing function
-void SwingHandleInputGateRisingEdge(uint8_t channel) {
-  switch (swing_counter[channel]) {
+void SwingHandleInput(uint8_t output_channel) {
+  switch (swing_counter[output_channel]) {
     case 0: // thru beat
-            SwingExecThru(channel);
-            swing_counter[channel] = 1;
+            SwingExecThru(output_channel);
+            swing_counter[output_channel] = 1;
             break;
     case 1: // skipped thru beat
             // unless lowest setting, no swing - should do thru
-            if (swing[channel] <= SWING_FACTOR_MIN) {
-              SwingExecStrike(channel);
-              SwingReset(channel);
+            if (swing[output_channel] <= SWING_FACTOR_MIN) {
+              SwingExecStrike(output_channel);
+              SwingReset(output_channel);
             } else {
               // rest
-              exec_state[channel] = 0;
-              swing_counter[channel] = 2;
+              exec_state[output_channel] = 0;
+              swing_counter[output_channel] = 2;
             }
             break;
-    default: SwingReset(channel); // something is wrong if we're here so reset
+    default: SwingReset(output_channel); // something is wrong if we're here so reset
              break;
   }
+}
+
+inline void FactorerExecChainedSwing(uint8_t channel) {
+  PulseTrackerRecord(PULSE_TRACKER_CHAIN_INDEX);
+  SwingHandleInput(channel);
+}
+
+// Is the gate input for the given channel seeing a new pulse?
+inline bool GateInputIsRisingEdge(uint8_t channel) {
+  bool last_state = gate_input_state[channel];
+  // store current input state
+  gate_input_state[channel] = GateInputRead(channel);
+  //
+  return gate_input_state[channel] && !last_state;
+}
+
+// For the given channel, update state for a multiply strike
+inline void MultiplyExecStrike(uint8_t channel) {
+  channel_last_action_at[channel] = TCNT1;
+  exec_state[channel] = 2;
+  multiply_is_debouncing[channel] = true;
+  if (FactorerHasChainedSwing(channel)) {
+    FactorerExecChainedSwing(channel);
+  }
+}
+
+// For the given channel and current system state, execute a single
+// cycle of the multiplier function
+inline void MultiplyExec(uint8_t channel) {
+  if (MultiplyIsEnabled(channel) &&
+        MultiplyIsPossible(channel) &&
+        MultiplyShouldStrike(channel, PulseTrackerGetElapsed(PULSE_TRACKER_INPUT_INDEX))) {
+    MultiplyExecStrike(channel);
+  }
+}
+
+// Update the given channel's state to reflect that the multiplier is executing
+// thru for this cycle
+inline void MultiplyExecThru(uint8_t channel) {
+  exec_state[channel] = 1;
+  channel_last_action_at[channel] = TCNT1;
+  if (FactorerHasChainedSwing(channel)) {
+    FactorerExecChainedSwing(channel);
+  }
+}
+
+// For the given channel, reset the divider function
+inline void DivideReset(uint8_t channel) {
+  divide_counter[channel] = 0;
+}
+
+// For the given channel and current system state, should the divider function reset?
+inline bool DivideShouldReset(uint8_t channel) {
+  return divide_counter[channel] >= (factor[channel] - 1);
+}
+
+// For the given channel, update state for a divide strike
+inline void DivideExecStrike(uint8_t channel) {
+  channel_last_action_at[channel] = TCNT1;
+  exec_state[channel] = 2; // divide converts thru to exec on every division
+  if (FactorerHasChainedSwing(channel)) {
+    FactorerExecChainedSwing(channel);
+  }
+}
+
+// For the given channel, process a new pulse using the factorer function
+void FactorerHandleInputGateRisingEdge(uint8_t channel) {
+  //
+  if (DivideIsEnabled(channel)) {
+    if (DivideShouldStrike(channel)) {
+      DivideExecStrike(channel);
+    }
+    // deal with counter
+    if (DivideShouldReset(channel)) {
+      DivideReset(channel);
+    } else {
+      ++divide_counter[channel];
+    }
+  } else {
+    MultiplyExecThru(channel); // multiply always acknowledges thru
+  }
+}
+
+// For the given channel, process a new pulse using the swing function
+void SwingHandleInputGateRisingEdge(uint8_t channel) {
+  SwingHandleInput(channel);
 }
 
 // For the given channel and current system state, execute a single
 // cycle of the swing function
 inline void SwingExec(uint8_t channel) {
-  if (SwingShouldStrike(channel, PulseTrackerGetElapsed())) {
+  if (SwingShouldStrike(channel, PulseTrackerGetElapsed(PULSE_TRACKER_INPUT_INDEX))) {
     SwingExecStrike(channel);
     SwingReset(channel); // reset
   }
@@ -749,9 +782,9 @@ inline void Loop() {
   bool is_trig = false;
 
   if (GateInputIsRisingEdge(GATE_INPUT_TRIG_INDEX)) {
-    // Pulse tracker is always recording. this should help smooth transitions
+    // Input pulse tracker is always recording. this should help smooth transitions
     // between functions even though divide doesn't use it
-    PulseTrackerRecord();
+    PulseTrackerRecord(PULSE_TRACKER_INPUT_INDEX);
     is_trig = true;
   }
 
