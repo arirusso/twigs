@@ -163,6 +163,24 @@ void LedsInit() {
   led_state[0] = led_state[1] = 0;
 }
 
+// The value for the pot/CV input for the given channel
+inline int16_t AdcReadValue(uint8_t channel) {
+  uint8_t pin = (channel == 0) ? 1 : 0;
+  return adc.Read8(pin);
+}
+
+// Cache the adc value for the given channel
+inline void AdcSetValue(uint8_t channel, int16_t value) {
+  // store control value
+  adc_value[channel] = ADC_MAX_VALUE - value;
+  // appears to be variance between channels, so limit the value
+  if (adc_value[channel] < 0) {
+    adc_value[channel] = 0;
+  } else if (adc_value[channel] > ADC_MAX_VALUE) {
+    adc_value[channel] = ADC_MAX_VALUE;
+  }
+}
+
 // Initialize the pots and CV inputs
 void AdcInit() {
   adc.Init();
@@ -170,6 +188,11 @@ void AdcInit() {
   Adc::set_reference(ADC_DEFAULT);
   Adc::set_alignment(ADC_LEFT_ALIGNED);
   adc_counter = 1;
+
+  // set initial value
+  for (uint8_t i = 0; i < SYSTEM_NUM_CHANNELS; ++i) {
+    AdcSetValue(i, AdcReadValue(i));
+  }
 }
 
 // Load the stored system settings from the eeprom
@@ -365,12 +388,6 @@ inline void AdcScan() {
   }
 }
 
-// The value for the pot/CV input for the given channel
-inline int16_t AdcReadValue(uint8_t channel) {
-  uint8_t pin = (channel == 0) ? 1 : 0;
-  return adc.Read8(pin);
-}
-
 // Does the pot/CV input for the given channel have a new value since last checked?
 bool AdcHasNewValue(uint8_t channel) {
   if (adc_counter == 0) {
@@ -382,14 +399,7 @@ bool AdcHasNewValue(uint8_t channel) {
       delta = -delta;
     }
     if (delta > ADC_DELTA_THRESHOLD) {
-      // store control value
-      adc_value[channel] = ADC_MAX_VALUE - value;
-      // appears to be variance between channels, so limit the value
-      if (adc_value[channel] < 0) {
-        adc_value[channel] = 0;
-      } else if (adc_value[channel] > ADC_MAX_VALUE) {
-        adc_value[channel] = ADC_MAX_VALUE;
-      }
+      AdcSetValue(channel, value);
       return true;
     }
   }
