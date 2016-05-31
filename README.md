@@ -26,13 +26,13 @@ VC Factor is a combination clock/trigger divider and multiplier
 
 ###### Factor Control
 
-![twigs alt firmware, diagram of factor control](http://i.imgur.com/hFf9x0q.png)
+![twigs alt firmware, diagram of factor control](http://i.imgur.com/hEDyddZ.png)
 
 The channel's knob controls the *factor*, which determines whether the input is divided or multiplied and by how much
 
 As illustrated above, turning the knob to the left produces increasing factors of multiplication, and to the right, division
 
-When the knob is at the zero position, the effect is bypassed and will pass input directly from the trig input to the channel outputs
+When the knob is at the *1* position, the effect is bypassed the output will be the same as the input
 
 ###### Other Controls
 
