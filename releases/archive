@@ -1,0 +1,8 @@
+#!/bin/sh
+# Package Twigs for release
+#
+# Usage:
+# releases/archive 1.0.1
+
+cd ..
+tar --exclude=twigs/.git --exclude=twigs/releases -zcvf twigs/releases/twigs-$1.tar.gz twigs
