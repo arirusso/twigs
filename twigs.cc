@@ -199,7 +199,7 @@ void AdcInit() {
 // Currently, this consists of which functions are active on each channel
 void SystemLoadState() {
   uint8_t configuration_byte = ~eeprom_read_byte((uint8_t*) 0);
-  // bytes 1 2 4 8
+  // byte values 1 2 4 8
   for (uint8_t i = 0; i < SYSTEM_NUM_CHANNELS; ++i) {
     uint8_t b = (i+1) * (i+1);
     if (configuration_byte & b) {
@@ -680,7 +680,7 @@ inline void ChannelStateUpdate(uint8_t channel, bool is_trig, bool is_reset) {
 // Currently stores which functions are selected by the user
 void SystemStateSave() {
   uint8_t configuration_byte = 0;
-  // bytes 1 2 4 8
+  // byte values 1 2 4 8
   for (uint8_t i = 0; i < SYSTEM_NUM_CHANNELS; ++i) {
     uint8_t b = (i+1) * (i+1);
     switch(channel_function_[i]) {
