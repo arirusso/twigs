@@ -70,7 +70,7 @@ Holding the channel's button for a couple of seconds will toggle the function of
 
 ## Installation
 
-Download the latest stable source & dependencies package [here](https://github.com/arirusso/twigs/blob/master/releases/twigs-1.0.0.tar.gz?raw=true)
+Download the latest stable source & dependencies package [here](https://github.com/arirusso/twigs/blob/master/releases/twigs-1.0.1.tar.gz?raw=true)
 
 Mutable Instruments' guide to installing open source firmware on Branches can be found [here](http://mutable-instruments.net/modules/branches/open) under "Sending the firmware to the module"
 
