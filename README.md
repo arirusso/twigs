@@ -9,6 +9,8 @@ Twigs consists of two functions
 
 These functions can be assigned by the user to either or both channels on the module
 
+[![twigs alt firmware, demo video](http://img.youtube.com/vi/lWKPzUoxJjY/0.jpg?1)](http://www.youtube.com/watch?v=lWKPzUoxJjY)
+
 ## Usage
 #### Shared Input/Reset
 
