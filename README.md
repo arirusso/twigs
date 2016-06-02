@@ -9,10 +9,6 @@ Twigs consists of two functions
 
 These functions can be assigned by the user to either or both channels on the module
 
-Here is a short video that gives an overview of the functionality and usage
-
-[![twigs alt firmware, demo video](http://img.youtube.com/vi/lWKPzUoxJjY/0.jpg?1)](http://www.youtube.com/watch?v=lWKPzUoxJjY)
-
 ## Usage
 #### Shared Input/Reset
 
@@ -71,6 +67,12 @@ Both outputs (**1**) produce the same result
 By default, Twigs has VC Swing in the top channel and VC Factor in the bottom
 
 Holding the channel's button for a couple of seconds will toggle the function of that channel.  The current functions of the channel are stored and will remain when the module is powered up again
+
+## Video
+
+Here is a short video that gives an overview of the functionality and usage
+
+[![twigs alt firmware, demo video](http://img.youtube.com/vi/lWKPzUoxJjY/0.jpg?1)](http://www.youtube.com/watch?v=lWKPzUoxJjY)
 
 ## Installation
 
