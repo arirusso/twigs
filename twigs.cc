@@ -60,16 +60,17 @@ Gpio<PortC, 3> button_1;
 // Factorer
 //
 // The number 15 represents the set:
-//  -8, -7, -6, -5, -4, -3, -2, 0, 2, 3, 4, 5, 6, 7, 8
+//  -8, -7, -6, -5, -4, -3, -2, 1, 2, 3, 4, 5, 6, 7, 8
 //
 // negative numbers are multiplier factors
 // positive numbers are divider factors
-// and zero is bypass
+// and 1 is bypass
 #define FACTORER_NUM_FACTORS 15
-// The index of zero in the above set
+// The index of 1 in the above set
 // This is the control setting where factorer is neither dividing nor
 // multiplying
 #define FACTORER_BYPASS_INDEX 7
+#define FACTORER_BYPASS_VALUE 1
 
 // Adc
 AdcInputScanner adc;
@@ -288,7 +289,7 @@ void PulseTrackerRecord() {
 
 // Is the factor control setting such that we're in multiplier mode?
 inline bool MultiplyIsEnabled(uint8_t channel) {
-  return factor[channel] < 0;
+  return factor[channel] < FACTORER_BYPASS_VALUE;
 }
 
 // Is the pulse tracker populated with enough events to perform multiply?
@@ -321,7 +322,7 @@ inline bool MultiplyShouldStrike(uint8_t channel, uint16_t elapsed) {
 
 // Is the factor setting such that we're in divider mode?
 inline bool DivideIsEnabled(uint8_t channel) {
-  return factor[channel] > 0;
+  return factor[channel] > FACTORER_BYPASS_VALUE;
 }
 
 // Should the divider function exec on this cycle?
@@ -332,11 +333,11 @@ inline bool DivideShouldStrike(uint8_t channel) {
 // What is the current factor setting?
 inline int16_t FactorGet(uint8_t channel) {
   int16_t factor_index = (adc_value[channel] / (ADC_MAX_VALUE / (FACTORER_NUM_FACTORS - 1))) - FACTORER_BYPASS_INDEX;
-  // offset result so that there's no -1 or 1 factor, but values are still evenly spaced
+  // offset result so that there's no -1 or 0 factors, but values are still evenly spaced
   if (factor_index == 0) {
-    return 0;
+    return FACTORER_BYPASS_VALUE;
   } else if (factor_index < 0) {
-    return --factor_index;
+    return --factor_index; // abs
   } else {
     return ++factor_index;
   }
