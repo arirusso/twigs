@@ -280,6 +280,12 @@ inline uint16_t PulseTrackerGetPeriod() {
   return pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] - pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2];
 }
 
+// Is the pulse tracker populated with enough events to perform multiply?
+inline bool PulseTrackerHasPeriod(uint8_t channel) {
+  return pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] > 0 &&
+    pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2] > 0;
+}
+
 // Record the current time as the latest pulse tracker event and shift the last one back
 void PulseTrackerRecord() {
   // shift
@@ -290,12 +296,6 @@ void PulseTrackerRecord() {
 // Is the factor control setting such that we're in multiplier mode?
 inline bool MultiplyIsEnabled(uint8_t channel) {
   return factor[channel] < FACTORER_BYPASS_VALUE;
-}
-
-// Is the pulse tracker populated with enough events to perform multiply?
-inline bool MultiplyIsPossible(uint8_t channel) {
-  return pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] > 0 &&
-    pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2] > 0;
 }
 
 // The time interval between multiplied events
@@ -483,7 +483,7 @@ inline void MultiplyExecStrike(uint8_t channel) {
 // cycle of the multiplier function
 inline void MultiplyExec(uint8_t channel) {
   if (MultiplyIsEnabled(channel) &&
-        MultiplyIsPossible(channel) &&
+        PulseTrackerHasPeriod(channel) &&
         MultiplyShouldStrike(channel, PulseTrackerGetElapsed())) {
     MultiplyExecStrike(channel);
   }
