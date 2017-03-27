@@ -266,8 +266,8 @@ inline void GateOutputOff(uint8_t channel) {
 
 // Clear both of the values in the Pulse Tracker
 inline void PulseTrackerClear() {
-  pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE-2] = 0;
-  pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE-1] = 0;
+  pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2] = 0;
+  pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] = 0;
 }
 
 // The amount of time since the last tracked event
