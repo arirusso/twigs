@@ -229,6 +229,7 @@ void SystemInit() {
 
   // Hardware interface
   GateInputsInit();
+  ClockInit();
   ButtonsInit();
   GateOutputsInit();
   LedsInit();
@@ -238,8 +239,6 @@ void SystemInit() {
 
   TCCR1A = 0;
   TCCR1B = 5;
-
-  ClockInit();
 }
 
 // Read the value of the given gate input
