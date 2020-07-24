@@ -75,6 +75,10 @@ Gpio<PortC, 3> button_1;
 // Timer counter max value
 #define TCNT1_MAX 0xffff
 
+// Trigger length 0.128ms * 20 = 2.56ms
+// If you don't need to extend trigger length, set this value to 0
+#define TRIGGER_EXTEND_COUNT 20
+
 // Adc
 AdcInputScanner adc;
 uint8_t adc_counter;
@@ -95,6 +99,7 @@ uint16_t led_gate_duration[SYSTEM_NUM_CHANNELS];
 // Channel state
 uint16_t channel_last_action_at[SYSTEM_NUM_CHANNELS];
 uint8_t exec_state[SYSTEM_NUM_CHANNELS];
+uint8_t trigger_extend_count[SYSTEM_NUM_CHANNELS];
 
 // Available functions
 enum ChannelFunction {
@@ -426,6 +431,7 @@ inline void ClockInit() {
   PulseTrackerClear();
   for (uint8_t i = 0; i < SYSTEM_NUM_CHANNELS; ++i) {
     channel_last_action_at[i] = 0;
+    trigger_extend_count[i] = 0;
     button_last_press_at[i] = 0;
     button_is_inhibited[i] = false;
   }
@@ -635,9 +641,14 @@ inline void FunctionExec(uint8_t channel) {
   // Do stuff
   if (exec_state[channel] > 0) {
     GateOutputOn(channel);
+    trigger_extend_count[channel] = TRIGGER_EXTEND_COUNT;
     (exec_state[channel] < 2) ? LedExecThru(channel) : LedExecStrike(channel);
   } else {
-    GateOutputOff(channel);
+    if (trigger_extend_count[channel] <= 0) {
+      GateOutputOff(channel);
+    } else {
+      trigger_extend_count[channel] -= 1;
+    }
   }
   exec_state[channel] = 0; // clean up
 }
