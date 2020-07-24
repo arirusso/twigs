@@ -72,6 +72,9 @@ Gpio<PortC, 3> button_1;
 #define FACTORER_BYPASS_INDEX 7
 #define FACTORER_BYPASS_VALUE 1
 
+// Timer counter max value
+#define TCNT1_MAX 0xffff
+
 // Adc
 AdcInputScanner adc;
 uint8_t adc_counter;
@@ -107,6 +110,7 @@ ChannelFunction channel_function_[SYSTEM_NUM_CHANNELS] = {
 
 // Common function vars
 uint16_t pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE];
+uint16_t pulse_tracker_recorded_count;
 int16_t factor[SYSTEM_NUM_CHANNELS];
 
 // Multiply
@@ -118,6 +122,8 @@ int8_t divide_counter[SYSTEM_NUM_CHANNELS];
 // Swing
 int16_t swing[SYSTEM_NUM_CHANNELS];
 int8_t swing_counter[SYSTEM_NUM_CHANNELS];
+
+void ClockInit();
 
 // Initialize the gate inputs (used for trig/reset)
 void GateInputsInit() {
@@ -228,6 +234,7 @@ void SystemInit() {
   TCCR1A = 0;
   TCCR1B = 5;
 
+  ClockInit();
 }
 
 // Read the value of the given gate input
@@ -268,22 +275,26 @@ inline void GateOutputOff(uint8_t channel) {
 inline void PulseTrackerClear() {
   pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2] = 0;
   pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] = 0;
+  pulse_tracker_recorded_count = 0;
 }
 
 // The amount of time since the last tracked event
 inline uint16_t PulseTrackerGetElapsed() {
-  return TCNT1 - pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1];
+  return (TCNT1 >= pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1])
+    ? TCNT1 - pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1]
+    : TCNT1 + (TCNT1_MAX - pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1]);
 }
 
 // The period of time between the last two recorded events
 inline uint16_t PulseTrackerGetPeriod() {
-  return pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] - pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2];
+  return (pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] >= pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2])
+    ? pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] - pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2]
+    : pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] + (TCNT1_MAX - pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2]);
 }
 
 // Is the pulse tracker populated with enough events to perform multiply?
 inline bool PulseTrackerHasPeriod(uint8_t channel) {
-  return pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] > 0 &&
-    pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2] > 0;
+  return pulse_tracker_recorded_count >= PULSE_TRACKER_BUFFER_SIZE;
 }
 
 // Record the current time as the latest pulse tracker event and shift the last one back
@@ -291,6 +302,9 @@ void PulseTrackerRecord() {
   // shift
   pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 2] = pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1];
   pulse_tracker_buffer[PULSE_TRACKER_BUFFER_SIZE - 1] = TCNT1;
+  if (pulse_tracker_recorded_count < PULSE_TRACKER_BUFFER_SIZE) {
+    pulse_tracker_recorded_count += 1;
+  }
 }
 
 // Is the factor control setting such that we're in multiplier mode?
@@ -407,14 +421,8 @@ bool AdcHasNewValue(uint8_t channel) {
   return false;
 }
 
-// Has the internal clock reached overflow?
-inline bool ClockIsOverflow() {
-  return (channel_last_action_at[0] > TCNT1 || channel_last_action_at[1] > TCNT1);
-}
-
-// Clear the pulse tracker and other time based variables.  Due to clock overflow
-// their meaning has been lost
-inline void ClockHandleOverflow() {
+// Initialize the pulse tracker and other time based variables
+inline void ClockInit() {
   PulseTrackerClear();
   for (uint8_t i = 0; i < SYSTEM_NUM_CHANNELS; ++i) {
     channel_last_action_at[i] = 0;
@@ -725,7 +733,9 @@ void ButtonsScanAndExec() {
   for (uint8_t i = 0; i < SYSTEM_NUM_CHANNELS; ++i) {
     bool new_input_state = ButtonIsNewState(i);
     if (button_state[i] && !button_is_inhibited[i]) {
-      uint16_t button_press_time = TCNT1 - button_last_press_at[i];
+      uint16_t button_press_time = (TCNT1 >= button_last_press_at[i])
+        ? TCNT1 - button_last_press_at[i]
+        : TCNT1 + (TCNT1_MAX - button_last_press_at[i]);
       if (button_press_time >= BUTTON_LONG_PRESS_DURATION) {
         button_is_inhibited[i] = true;
         // long press
@@ -744,10 +754,6 @@ void ButtonsScanAndExec() {
 
 // Single system loop
 inline void Loop() {
-
-  if (ClockIsOverflow()) {
-    ClockHandleOverflow();
-  }
 
   // Scan pot/cv in
   AdcScan();
