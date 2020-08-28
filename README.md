@@ -76,7 +76,7 @@ Here is a short video that gives an overview of the functionality and usage
 
 ## Installation
 
-Download the latest stable source & dependencies package [here](https://github.com/arirusso/twigs/blob/master/releases/twigs-1.0.1.tar.gz?raw=true)
+Download the latest stable source & dependencies package [here](https://github.com/arirusso/twigs/blob/master/releases/twigs-1.0.2.tar.gz?raw=true)
 
 Mutable Instruments' guide to installing open source firmware on Branches can be found [here](http://mutable-instruments.net/modules/branches/open) under "Sending the firmware to the module"
 
