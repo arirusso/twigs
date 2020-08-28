@@ -6,7 +6,7 @@
 // Licensed GPL3.0
 //
 // Based on code from the original MI Branches firmware
-// Copyright 2012 Olivier Gillet and licensed GPL 3.0
+// Copyright 2012 Emilie Gillet and licensed GPL 3.0
 //
 
 #include <avr/eeprom.h>

@@ -86,7 +86,7 @@ Also my notes on similarly uploading the stock Branches firmware are [here](http
 
 ## Credit
 
-Although heavily modified, Twigs is based on the stock MI Branches firmware.  That project can be [found in the MI Eurorack repository](https://github.com/pichenettes/eurorack) and is copyright 2012 Olivier Gillet, licensed GPL3.0
+Although heavily modified, Twigs is based on the stock MI Branches firmware.  That project can be [found in the MI Eurorack repository](https://github.com/pichenettes/eurorack) and is copyright 2012 Emilie Gillet, licensed GPL3.0
 
 ## Author
 
